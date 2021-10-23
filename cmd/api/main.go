@@ -16,6 +16,14 @@ import (
 // version of application
 const version = "1.0.0"
 
+const (
+	host     = "localhost"
+	port     = 5432
+	user     = "keya"
+	password = "1234"
+	dbname   = "movies"
+)
+
 type config struct {
 	port int
 	env string
@@ -42,9 +50,13 @@ func main() {
 	var cfg config
 
 	// read input from command line
+	//"postgres://keya:1234@127.0.0.1/movies?sslmode=disable"
+	psqlinfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
 	flag.IntVar(&cfg.port, "port", 4000, "Server port to listen on")
 	flag.StringVar(&cfg.env, "env", "development", "Application env development|Production")
-	flag.StringVar(&cfg.db.dsn, "dsn", "postgres://keya:1234@127.0.0.1/movies?sslmode=disable","Postgres connection string")
+	flag.StringVar(&cfg.db.dsn, "dsn", psqlinfo, "Postgres connection string")
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
