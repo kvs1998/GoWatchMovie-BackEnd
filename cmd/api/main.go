@@ -1,7 +1,7 @@
 package main
 
 import (
-	"backend/cmd/models"
+	"backend/models"
 	"context"
 	"database/sql"
 	"flag"
@@ -18,9 +18,9 @@ const version = "1.0.0"
 
 const (
 	host     = "localhost"
-	port     = 5432
-	user     = "keya"
-	password = "1234"
+	port     = 6000
+	user     = "cal"
+	password = "newport"
 	dbname   = "movies"
 )
 
@@ -50,26 +50,27 @@ func main() {
 	var cfg config
 
 	// read input from command line
-	//"postgres://keya:1234@127.0.0.1/movies?sslmode=disable"
-	psqlinfo := fmt.Sprintf("host=%s port=%d user=%s "+
+	//"postgres://cal:newport@localhost:5432/movies?sslmode=disable"
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
 	flag.IntVar(&cfg.port, "port", 4000, "Server port to listen on")
 	flag.StringVar(&cfg.env, "env", "development", "Application env development|Production")
-	flag.StringVar(&cfg.db.dsn, "dsn", psqlinfo, "Postgres connection string")
+	flag.StringVar(&cfg.db.dsn, "dsn", psqlInfo, "Postgres connection string")
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
 	db, err := openDB(cfg)
 	if err != nil {
+		logger.Println("ERROR")
 		logger.Fatal(err)
 	}
 	defer db.Close()
 
 	app := &application{
 		config: cfg,
-		logger:logger,
+		logger: logger,
 		models: models.NewModels(db),
 	}
 
@@ -93,12 +94,14 @@ func main() {
 func openDB(cfg config) (*sql.DB, error) {
 	db, err := sql.Open("postgres", cfg.db.dsn)
 	if err != nil {
+		log.Println(" sql open  ERROR")
 		return nil, err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
-	defer cancel()
 	err = db.PingContext(ctx)
+	defer cancel()
 	if err != nil {
+		log.Println(" ping error")
 		return nil, err
 	}
 	return db, nil

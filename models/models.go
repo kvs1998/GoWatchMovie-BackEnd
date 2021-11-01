@@ -11,8 +11,8 @@ type Models struct {
 }
 // returns Models with db pool
 func NewModels(db *sql.DB) Models {
-	return Models {
-		DB: DBModel {
+	return Models{
+		DB: DBModel{
 			DB: db,
 		},
 	}
@@ -40,10 +40,10 @@ type Genre struct {
 }
 
 type MovieGenre struct {
-	ID int `json:"id"`
-	MovieID int `json:"movie_id"`
-	GenreID int `json:"genre_id"`
-	Genre Genre `json:"genre"`
+	ID        int       `json:"id"`
+	MovieID   int       `json:"movie_id"`
+	GenreID   int       `json:"genre_id"`
+	Genre     Genre     `json:"genre"`
 	CreatedAt time.Time `json:"-"`
 	UpdatedAt time.Time `json:"-"`
 }
