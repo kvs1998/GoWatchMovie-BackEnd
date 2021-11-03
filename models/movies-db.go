@@ -11,7 +11,7 @@ type DBModel struct{
 }
 
 //for one movie
-func (m *DBModel) Get(id int) (*Movie, error) {
+func (m *DBModel) GetOneMovie(id int) (*Movie, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3* time.Second)
 	defer cancel()
 	query := `select id, title, description, year, release_date, rating, runtime, mpaa_rating,
@@ -69,7 +69,7 @@ func (m *DBModel) Get(id int) (*Movie, error) {
 }
 
 //for all movies
-func (m *DBModel) All() (*[]Movie, error) {
+func (m *DBModel) AllMovies() (*[]Movie, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3* time.Second)
 	defer cancel()
 	query := `select id, title, description, year, release_date, rating, runtime, mpaa_rating,
@@ -100,4 +100,27 @@ func (m *DBModel) All() (*[]Movie, error) {
 		movies_list = append(movies_list, movie)
 	}
 	return &movies_list, nil
+}
+
+func (m *DBModel) AllGenres() ([]*Genre, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3* time.Second)
+	defer cancel()
+	query := `select genre_name from genres
+	`
+	rows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	var genre_list []*Genre
+	for rows.Next() {
+		var genre Genre
+		err = rows.Scan(
+			&genre.GenreName,
+		)
+		if err != nil {
+			return nil, err
+		}
+		genre_list = append(genre_list, &genre)
+	}
+	return genre_list, nil
 }
