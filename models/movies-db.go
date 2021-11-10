@@ -105,8 +105,7 @@ func (m *DBModel) AllMovies() (*[]Movie, error) {
 func (m *DBModel) AllGenres() ([]*Genre, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3* time.Second)
 	defer cancel()
-	query := `select genre_name from genres
-	`
+	query := `select id, genre_name from genres`
 	rows, err := m.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
@@ -115,6 +114,7 @@ func (m *DBModel) AllGenres() ([]*Genre, error) {
 	for rows.Next() {
 		var genre Genre
 		err = rows.Scan(
+			&genre.ID,
 			&genre.GenreName,
 		)
 		if err != nil {
@@ -123,4 +123,32 @@ func (m *DBModel) AllGenres() ([]*Genre, error) {
 		genre_list = append(genre_list, &genre)
 	}
 	return genre_list, nil
+}
+
+func (m *DBModel) AllMoviesByGenre(id int) ([]*Movie, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3* time.Second)
+	defer cancel()
+	query := `SELECT m.id, m.title
+		FROM movies_genres mg INNER JOIN movies m 
+		ON mg.movie_id = m.id
+		WHERE mg.genre_id = $1;
+	`
+
+	rows, err := m.DB.QueryContext(ctx, query, id)
+	if err != nil {
+		return nil, err
+	}
+	var movie_list []*Movie
+	for rows.Next() {
+		var movie Movie
+		err = rows.Scan(
+			&movie.ID,
+			&movie.Title,
+		)
+		if err != nil {
+			return nil, err
+		}
+		movie_list = append(movie_list, &movie)
+	}
+	return movie_list, nil
 }
