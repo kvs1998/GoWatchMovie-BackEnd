@@ -1,11 +1,20 @@
 package main
 
 import (
+	"backend/models"
+	"encoding/json"
 	"errors"
 	"github.com/julienschmidt/httprouter"
+	"log"
 	"net/http"
 	"strconv"
+	"time"
 )
+
+type jsonResp struct {
+	OK      bool   `json:"ok"`
+	Message string `json:"message"`
+}
 
 func (app *application) getOneMovie(w http.ResponseWriter, r *http.Request){
 	params := httprouter.ParamsFromContext(r.Context())
@@ -63,6 +72,59 @@ func (app *application) getAllMoviesByGenre(w http.ResponseWriter, r *http.Reque
 	err = app.writeJSON(w,http.StatusOK, allgenres, "MoviesByGenre")
 	if err != nil{
 		app.logger.Println("error")
+		return
+	}
+}
+
+type MoviePayload struct {
+	ID string `json:"id"`
+	Title string `json:"title"`
+	Description string `json:"description"`
+	Year string `json:"year"`
+	ReleaseDate string`json:"release_date"`
+	Runtime string `json:"runtime"`
+	Rating string `json:"rating"`
+	MPAARating  string `json:"mpaa_rating"`
+}
+
+func (app *application) InsertMovie(w http.ResponseWriter, r *http.Request){
+	log.Println("Reached")
+	var req MoviePayload
+	err := json.NewDecoder(r.Body).Decode(&req)
+	log.Println("Decoded", req)
+	if err != nil {
+		app.logger.Println(errors.New("Decoder error"))
+		app.errorJSON(w, err)
+		return
+	}
+	var movie models.Movie
+	movie.ID,_ = strconv.Atoi(req.ID)
+	movie.Title = req.Title
+	movie.Description = req.Description
+	movie.Year,_ = strconv.Atoi(req.Year)
+	movie.ReleaseDate, _ = time.Parse("2006-01-02", req.ReleaseDate)
+	movie.Rating,_ = strconv.Atoi(req.Rating)
+	movie.Runtime,_ = strconv.Atoi(req.Runtime)
+	movie.MPAARating = req.MPAARating
+	movie.CreatedAt = time.Now()
+	movie.UpdatedAt = time.Now()
+
+	if movie.ID == 0 {
+		err = app.models.DB.InsertMovie(movie)
+		if err != nil {
+			app.logger.Println(errors.New("Insert movie error"))
+			app.errorJSON(w, err)
+			return
+		}
+	}
+
+	ok := jsonResp{
+		OK: true,
+	}
+	err = app.writeJSON(w,http.StatusOK, ok, "response")
+	if err != nil {
+		app.logger.Println(errors.New("api error"))
+		app.errorJSON(w, err)
 		return
 	}
 }

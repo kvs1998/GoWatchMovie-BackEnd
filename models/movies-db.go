@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"database/sql"
+	"log"
 	"time"
 )
 
@@ -151,4 +152,21 @@ func (m *DBModel) AllMoviesByGenre(id int) ([]*Movie, error) {
 		movie_list = append(movie_list, &movie)
 	}
 	return movie_list, nil
+}
+
+func (m *DBModel) InsertMovie(movie Movie) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3* time.Second)
+	defer cancel()
+	query := `INSERT INTO movies(id, title, description, year, release_date, runtime, rating, mpaa_rating, created_at, updated_at)
+		VALUES ($1, $2, $3, $4,$5, $6, $7, $8, $9, $10);`
+
+	_, err := m.DB.ExecContext(ctx, query, movie.ID, movie.Title, movie.Description, movie.Year,
+		movie.ReleaseDate, movie.Runtime, movie.Rating, movie.MPAARating, movie.CreatedAt, movie.UpdatedAt)
+
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	log.Println("SUCCESS")
+	return nil
 }
