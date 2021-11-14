@@ -88,10 +88,8 @@ type MoviePayload struct {
 }
 
 func (app *application) InsertMovie(w http.ResponseWriter, r *http.Request){
-	log.Println("Reached")
 	var req MoviePayload
 	err := json.NewDecoder(r.Body).Decode(&req)
-	log.Println("Decoded", req)
 	if err != nil {
 		app.logger.Println(errors.New("Decoder error"))
 		app.errorJSON(w, err)
@@ -118,6 +116,33 @@ func (app *application) InsertMovie(w http.ResponseWriter, r *http.Request){
 		}
 	}
 
+	ok := jsonResp{
+		OK: true,
+	}
+	err = app.writeJSON(w,http.StatusOK, ok, "response")
+	if err != nil {
+		app.logger.Println(errors.New("api error"))
+		app.errorJSON(w, err)
+		return
+	}
+}
+
+
+func (app *application) DeleteMovie(w http.ResponseWriter, r *http.Request){
+	params := httprouter.ParamsFromContext(r.Context())
+	id, err := strconv.Atoi(params.ByName("id"))
+	log.Println("DELETE", id)
+	if err != nil {
+		app.logger.Println(errors.New("invalid id parameter"))
+		app.errorJSON(w, err)
+		return
+	}
+	err = app.models.DB.DeleteMovie(id)
+	if err != nil {
+		app.logger.Println(errors.New("Delete movie error"))
+		app.errorJSON(w, err)
+		return
+	}
 	ok := jsonResp{
 		OK: true,
 	}
