@@ -4,6 +4,7 @@ import (
 	"backend/models"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
@@ -85,16 +86,20 @@ type MoviePayload struct {
 	Runtime string `json:"runtime"`
 	Rating string `json:"rating"`
 	MPAARating  string `json:"mpaa_rating"`
+	MovieGenre []int `json:"movie_genre"`
 }
 
 func (app *application) InsertMovie(w http.ResponseWriter, r *http.Request){
 	var req MoviePayload
+
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		app.logger.Println(errors.New("Decoder error"))
 		app.errorJSON(w, err)
 		return
 	}
+
+	fmt.Printf("req %+v\n", req)
 	var movie models.Movie
 	movie.ID,_ = strconv.Atoi(req.ID)
 	movie.Title = req.Title
@@ -107,8 +112,10 @@ func (app *application) InsertMovie(w http.ResponseWriter, r *http.Request){
 	movie.CreatedAt = time.Now()
 	movie.UpdatedAt = time.Now()
 
+	fmt.Printf("%+v\n", movie)
+
 	if movie.ID == 0 {
-		err = app.models.DB.InsertMovie(movie)
+		err = app.models.DB.InsertMovie(movie, req.MovieGenre)
 		if err != nil {
 			app.logger.Println(errors.New("Insert movie error"))
 			app.errorJSON(w, err)

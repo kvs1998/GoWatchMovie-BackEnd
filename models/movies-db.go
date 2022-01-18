@@ -15,10 +15,11 @@ type DBModel struct{
 func (m *DBModel) GetOneMovie(id int) (*Movie, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3* time.Second)
 	defer cancel()
+
+	// get movie details
 	query := `select id, title, description, year, release_date, rating, runtime, mpaa_rating,
 				created_at, updated_at from movies where id = $1
 	`
-
 	row := m.DB.QueryRowContext(ctx, query, id)
 	var movie Movie
 	err := row.Scan(
@@ -37,7 +38,7 @@ func (m *DBModel) GetOneMovie(id int) (*Movie, error) {
 		return nil, err
 	}
 
-	//get genres
+	//get genres for that movie
 	query = `select
 				mg.id, mg.movie_id, mg.genre_id, g.genre_name
 			from
@@ -47,6 +48,7 @@ func (m *DBModel) GetOneMovie(id int) (*Movie, error) {
 			where mg.movie_id = $1
 			`
 	//var genres []MovieGenre
+	// genre id mapped to genre name
 	genres := make(map[int]string)
 	rows,_ := m.DB.QueryContext(ctx, query, id)
 	defer rows.Close()
@@ -154,13 +156,13 @@ func (m *DBModel) AllMoviesByGenre(id int) ([]*Movie, error) {
 	return movie_list, nil
 }
 
-func (m *DBModel) InsertMovie(movie Movie) error {
+func (m *DBModel) InsertMovie(movie Movie, genres []int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3* time.Second)
 	defer cancel()
 
-	var count int
+	var count_movie int
 	query := `SELECT MAX(id) FROM movies;`
-	if err := m.DB.QueryRow(query).Scan(&count); err != nil{
+	if err := m.DB.QueryRow(query).Scan(&count_movie); err != nil{
 		log.Println(err)
 		return err
 	}
@@ -169,13 +171,36 @@ func (m *DBModel) InsertMovie(movie Movie) error {
 	query = `INSERT INTO movies(id, title, description, year, release_date, runtime, rating, mpaa_rating, created_at, updated_at)
 		VALUES ($1, $2, $3, $4,$5, $6, $7, $8, $9, $10);`
 
-	_, err := m.DB.ExecContext(ctx, query, count+1, movie.Title, movie.Description, movie.Year,
+	_, err := m.DB.ExecContext(ctx, query, count_movie+1, movie.Title, movie.Description, movie.Year,
 		movie.ReleaseDate, movie.Runtime, movie.Rating, movie.MPAARating, movie.CreatedAt, movie.UpdatedAt)
 
 	if err != nil {
 		log.Println(err)
 		return err
 	}
+
+	var count int
+	for _, ele := range genres {
+
+		query = `SELECT MAX(id) FROM movies_genres;`
+		if err := m.DB.QueryRow(query).Scan(&count); err != nil{
+			log.Println(err)
+			return err
+		}
+
+
+		query = `INSERT INTO movies_genres(id, movie_id, genre_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4,$5);`
+
+		_, err = m.DB.ExecContext(ctx, query, count+1, count_movie+1, ele, movie.CreatedAt, movie.UpdatedAt )
+
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+	}
+
+
 	log.Println("SUCCESS")
 	return nil
 }
